@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "213558543326",
+    "project_id": "infopromov-86a5e",
+    "storage_bucket": "infopromov-86a5e.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:213558543326:android:34920d90723e56a661d34f",
+        "android_client_info": {
+          "package_name": "com.example.infopromo_v1"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDkzzRbMEpPe1TlzcYrr1SDHYlEkOObEpQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
