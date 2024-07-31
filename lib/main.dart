@@ -1,15 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:infopromo_v1/screens/splash_screen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:infopromo_v1/screens/introduction_screen.dart';
+import 'package:infopromo_v1/screens/landing_page.dart';
 import 'package:infopromo_v1/screens/home_screen.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  bool isFirstTime = prefs.getBool('isFirstTime') ?? true;
+void main() {
+  runApp(MyApp());
+}
 
-  runApp(MaterialApp(
-    debugShowCheckedModeBanner: false,
-    home: isFirstTime ? SplashScreen() : HomeScreen(),
-  ));
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      initialRoute: '/',
+      routes: {
+        '/': (context) => IntroductionScreen(),
+        '/landing': (context) => LandingPage(),
+        '/home': (context) => HomeScreen(),
+      },
+    );
+  }
 }
