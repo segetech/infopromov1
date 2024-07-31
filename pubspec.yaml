@@ -31,7 +31,8 @@ dependencies:
   flutter:
     sdk: flutter
   shared_preferences: ^2.0.6
-
+  smooth_page_indicator: ^1.2.0+3
+  font_awesome_flutter: ^10.7.0
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -68,6 +69,13 @@ flutter:
   - assets/images/Image1.png
   - assets/images/Image2.png
   - assets/images/smile.png
+  - assets/icons/super.gif
+  - assets/icons/Appleicon.png
+  - assets/icons/connectionicon.png
+  - assets/icons/Facebookicon.png
+  - assets/icons/Googleicon.png
+  - assets/icons/mali_flag.png
+
 
   # To add assets to your application, add an assets section, like this:
   # assets:

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:infopromo_v1/screens/home_screen.dart';
+import 'package:infopromo_v1/screens/signup_page.dart';
+import 'package:infopromo_v1/screens/sign.dart';
 
 class LandingPage extends StatelessWidget {
   @override
@@ -80,7 +82,10 @@ class LandingPage extends StatelessWidget {
                 children: [
                   ElevatedButton(
                     onPressed: () {
-                      // Navigate to login screen
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => LoginPage()),
+                      );
                     },
                     child: Text('Se Connecter',
                         style: TextStyle(color: Colors.white)),
@@ -94,7 +99,10 @@ class LandingPage extends StatelessWidget {
                   SizedBox(height: 20),
                   ElevatedButton(
                     onPressed: () {
-                      // Navigate to sign up screen
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => SignupPage()),
+                      );
                     },
                     child: Text('Créer un Compte',
                         style: TextStyle(color: Colors.white)),

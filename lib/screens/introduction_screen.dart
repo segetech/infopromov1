@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:smooth_page_indicator/smooth_page_indicator.dart';
+import 'package:infopromo_v1/screens/home_screen.dart';
 import 'package:infopromo_v1/screens/landing_page.dart';
 
 class IntroductionScreen extends StatefulWidget {
@@ -18,12 +20,82 @@ class _IntroductionScreenState extends State<IntroductionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: PageView(
-        controller: _controller,
+      body: Stack(
         children: [
-          IntroPage1(controller: _controller),
-          IntroPage2(controller: _controller),
-          LandingPage(),
+          PageView(
+            controller: _controller,
+            children: [
+              IntroPage1(controller: _controller),
+              IntroPage2(controller: _controller),
+              IntroPage3(controller: _controller),
+            ],
+          ),
+          Positioned(
+            top: 40,
+            right: 20,
+            child: TextButton(
+              onPressed: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => HomeScreen()),
+                );
+              },
+              child: Text(
+                'Skip',
+                style: TextStyle(color: Colors.black),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 20,
+            left: 20,
+            right: 20,
+            child: Column(
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    _controller.animateToPage(
+                      2,
+                      duration: Duration(milliseconds: 500),
+                      curve: Curves.easeInOut,
+                    );
+                  },
+                  child: SmoothPageIndicator(
+                    controller: _controller,
+                    count: 3,
+                    effect: WormEffect(
+                      dotColor: Colors.grey,
+                      activeDotColor: Color(0xFFED1C24),
+                      dotHeight: 12,
+                      dotWidth: 12,
+                    ),
+                  ),
+                ),
+                SizedBox(height: 16),
+                Align(
+                  alignment: Alignment.bottomRight,
+                  child: FloatingActionButton(
+                    backgroundColor: Color(0xFFED1C24),
+                    onPressed: () {
+                      if (_controller.page == 2) {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => LandingPage()),
+                        );
+                      } else {
+                        _controller.nextPage(
+                          duration: Duration(milliseconds: 500),
+                          curve: Curves.easeInOut,
+                        );
+                      }
+                    },
+                    child: Icon(Icons.arrow_forward),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -42,8 +114,7 @@ class IntroPage1 extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Image.asset(
-              'assets/images/Image1.png'), // Replace with your image path
+          Image.asset('assets/images/Image1.png'),
           SizedBox(height: 20),
           Text(
             'Info Promo',
@@ -95,8 +166,7 @@ class IntroPage2 extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Image.asset(
-              'assets/images/Image2.png'), // Replace with your image path
+          Image.asset('assets/images/Image2.png'),
           SizedBox(height: 20),
           Text(
             'Économisez jusqu\'à 70 %',
@@ -129,6 +199,44 @@ class IntroPage2 extends StatelessWidget {
                 curve: Curves.easeInOut,
               );
             },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class IntroPage3 extends StatelessWidget {
+  final PageController controller;
+
+  IntroPage3({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.white,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Image.asset('assets/icons/super.gif'),
+          SizedBox(height: 20),
+          Text(
+            'Super Deals',
+            style: TextStyle(
+              fontSize: 60,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFFED1C24),
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: 10),
+          Text(
+            'Amazing discounts every day!',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.black,
+            ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
