@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:infopromo_v1/screens/signup_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'vendor_dashboard_page.dart';
+import 'home_screen.dart';
+import 'signup_page.dart';
+import 'vendor_registration_page.dart'; // Import de la page d'enregistrement de boutique
 
 class LoginPage extends StatefulWidget {
   @override
@@ -10,12 +15,86 @@ class _LoginPageState extends State<LoginPage> {
   bool _obscurePassword = true;
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  bool _isLoading = false;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _login() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Connexion avec Firebase Authentication
+      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      User? user = userCredential.user;
+
+      if (user != null) {
+        // Récupération du document utilisateur dans Firestore
+        DocumentSnapshot userDoc =
+            await _firestore.collection('Users').doc(user.uid).get();
+
+        if (userDoc.exists) {
+          // Le document existe, on peut accéder à ses champs
+          bool isVendor = userDoc['isVendor'] ?? false;
+
+          if (isVendor) {
+            DocumentSnapshot shopDoc =
+                await _firestore.collection('Shops').doc(user.uid).get();
+
+            if (shopDoc.exists) {
+              // Si la boutique existe, redirection vers le tableau de bord du vendeur
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => VendorDashboardPage()),
+              );
+            } else {
+              // Si la boutique n'existe pas, redirection vers la page d'enregistrement de boutique
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                    builder: (context) =>
+                        VendorRegistrationPage(userId: user.uid)),
+              );
+            }
+          } else {
+            // Si l'utilisateur n'est pas un vendeur, redirection vers la page utilisateur normal
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => HomeScreen()),
+            );
+          }
+        } else {
+          // Si le document utilisateur n'existe pas
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text(
+                    'Le document utilisateur n\'existe pas. Veuillez contacter le support.')),
+          );
+        }
+      }
+    } on FirebaseAuthException catch (e) {
+      // Gestion des erreurs liées à l'authentification
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message ?? 'Erreur lors de la connexion')),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -113,10 +192,12 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     SizedBox(height: 20),
                     ElevatedButton(
-                      onPressed: () {
-                        // Handle login
-                      },
-                      child: Text('Connexion'),
+                      onPressed: _isLoading ? null : _login,
+                      child: _isLoading
+                          ? CircularProgressIndicator(
+                              color: Colors.white,
+                            )
+                          : Text('Connexion'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Color(0xFFED1C24),
                         foregroundColor: Colors.white,
@@ -154,7 +235,7 @@ class _LoginPageState extends State<LoginPage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('Pas encore inscris? '),
+                        Text('Pas encore inscrit? '),
                         TextButton(
                           onPressed: () {
                             Navigator.push(

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
-import 'package:infopromo_v1/screens/home_screen.dart';
 import 'package:infopromo_v1/screens/landing_page.dart';
 
 class IntroductionScreen extends StatefulWidget {
@@ -37,7 +36,7 @@ class _IntroductionScreenState extends State<IntroductionScreen> {
               onPressed: () {
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (context) => HomeScreen()),
+                  MaterialPageRoute(builder: (context) => LandingPage()),
                 );
               },
               child: Text(

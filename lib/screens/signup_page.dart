@@ -1,22 +1,34 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:infopromo_v1/screens/sign.dart';
+import 'vendor_registration_page.dart';
+import 'user_congratulations_page.dart';
+import 'sign.dart';
 
 class SignupPage extends StatefulWidget {
   @override
   _SignupPageState createState() => _SignupPageState();
 }
 
-class _SignupPageState extends State<SignupPage>
-    with SingleTickerProviderStateMixin {
+class _SignupPageState extends State<SignupPage> {
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController _prenomController = TextEditingController();
+  final TextEditingController _nomController = TextEditingController();
   final TextEditingController _adresseController = TextEditingController();
   final TextEditingController _communeController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+
   bool isVendor = false;
   bool acceptTerms = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _isLoading = false;
-  late AnimationController _controller;
+
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   final List<Map<String, String>> quartiers = [
     {'quartier': 'Badalabougou', 'commune': 'Commune V'},
@@ -51,9 +63,7 @@ class _SignupPageState extends State<SignupPage>
     {'quartier': 'Sirakoro-Méguétana', 'commune': 'Commune VI'},
     {'quartier': 'Sabakabougou', 'commune': 'Commune VI'},
     {'quartier': 'Sokorodji', 'commune': 'Commune I'},
-    {'quartier': 'Sabalibougou', 'commune': 'Commune V'},
     {'quartier': 'Koulouba', 'commune': 'Commune III'},
-    {'quartier': 'Niamakoro', 'commune': 'Commune VI'},
     {'quartier': 'Point G', 'commune': 'Commune III'},
     {'quartier': 'Titibougou', 'commune': 'Commune VI'},
     {'quartier': 'Yirimadio', 'commune': 'Commune VI'},
@@ -64,15 +74,14 @@ class _SignupPageState extends State<SignupPage>
     {'quartier': 'Diarrakou', 'commune': 'Commune V'},
     {'quartier': 'Kanadjiguila', 'commune': 'Commune V'},
     {'quartier': 'Banankabougou', 'commune': 'Commune VI'},
-    {'quartier': 'Sebenikoro', 'commune': 'Commune IV'},
     {'quartier': 'Darsalam', 'commune': 'Commune III'},
     {'quartier': 'Medina-Coura', 'commune': 'Commune II'},
     {'quartier': 'Doumanzana', 'commune': 'Commune I'},
     {'quartier': 'Kalabancoura', 'commune': 'Commune V'},
+    {'quartier': 'Kalabancoura ACI', 'commune': 'Commune V'},
     {'quartier': 'Mopti-Coura', 'commune': 'Commune III'},
     {'quartier': 'Mali', 'commune': 'Commune VI'},
     {'quartier': 'N\'Golonina', 'commune': 'Commune II'},
-    {'quartier': 'Sikoroni', 'commune': 'Commune I'},
     {'quartier': 'Sotuba-ACI', 'commune': 'Commune I'},
     {'quartier': 'Banconi-Sokorodji', 'commune': 'Commune I'},
     {'quartier': 'Samaya', 'commune': 'Commune VI'},
@@ -85,31 +94,79 @@ class _SignupPageState extends State<SignupPage>
     {'quartier': 'Moribabougou', 'commune': 'Commune VI'},
     {'quartier': 'Kalabambougou', 'commune': 'Commune VI'},
     {'quartier': 'N\'Gabacoro Droit', 'commune': 'Commune VI'},
-    {'quartier': 'Kalanbancoura', 'commune': 'Commune VI'},
     {'quartier': 'Hipprodrome', 'commune': 'Commune II'},
     {'quartier': 'Missira', 'commune': 'Commune I'},
     {'quartier': 'Kalanbanbougou', 'commune': 'Commune VI'},
-    {'quartier': 'Faladié', 'commune': 'Commune VI'},
     {'quartier': 'Banamba', 'commune': 'Commune VI'},
     {'quartier': 'Dio-Gare', 'commune': 'Commune VI'},
     {'quartier': 'Fadiga', 'commune': 'Commune I'},
     {'quartier': 'Fassougou', 'commune': 'Commune VI'},
+    {'quartier': 'Kalaban Koro', 'commune': 'Commune VI'},
   ];
 
   @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 500),
-      vsync: this,
-    );
-  }
-
-  @override
   void dispose() {
+    _prenomController.dispose();
+    _nomController.dispose();
     _adresseController.dispose();
     _communeController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _phoneController.dispose();
     super.dispose();
+  }
+
+  Future<void> _registerUser() async {
+    if (_formKey.currentState?.validate() ?? false) {
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        // Créer un utilisateur avec email et mot de passe
+        UserCredential userCredential =
+            await _auth.createUserWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+        );
+
+        // Ajouter les informations utilisateur à Firestore
+        await _firestore.collection('Users').doc(userCredential.user?.uid).set({
+          'prenom': _prenomController.text.trim(),
+          'nom': _nomController.text.trim(),
+          'email': _emailController.text.trim(),
+          'adresse': _adresseController.text.trim(),
+          'commune': _communeController.text.trim(),
+          'isVendor': isVendor,
+          'phone': _phoneController.text.trim(),
+        });
+
+        if (isVendor) {
+          // Rediriger vers la page d'enregistrement du vendeur
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) =>
+                  VendorRegistrationPage(userId: userCredential.user?.uid),
+            ),
+          );
+        } else {
+          // Rediriger vers la page de félicitations utilisateur
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => UserCongratulationsPage()),
+          );
+        }
+      } on FirebaseAuthException catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message ?? 'Erreur inconnue')),
+        );
+      } finally {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   void _showTermsAndConditions(BuildContext context) {
@@ -119,7 +176,9 @@ class _SignupPageState extends State<SignupPage>
         return AlertDialog(
           title: Text('Conditions générales d\'utilisation'),
           content: SingleChildScrollView(
-            child: Text(''),
+            child: Text(
+              'Ici, vous pouvez inclure vos conditions générales d\'utilisation...',
+            ),
           ),
           actions: [
             TextButton(
@@ -155,35 +214,14 @@ class _SignupPageState extends State<SignupPage>
               ),
               padding: const EdgeInsets.all(16.0),
               child: Form(
+                key: _formKey,
                 child: Column(
                   children: [
                     Row(
                       children: [
                         Expanded(
                           child: TextFormField(
-                            decoration: InputDecoration(
-                              prefixIcon: Icon(Icons.person),
-                              labelText: 'Nom',
-                              labelStyle: TextStyle(
-                                color: Color(0xFFED1C24),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderSide:
-                                    BorderSide(color: Color(0xFFED1C24)),
-                              ),
-                              border: OutlineInputBorder(),
-                            ),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Veuillez entrer votre nom';
-                              }
-                              return null;
-                            },
-                          ),
-                        ),
-                        SizedBox(width: 10),
-                        Expanded(
-                          child: TextFormField(
+                            controller: _prenomController,
                             decoration: InputDecoration(
                               prefixIcon: Icon(Icons.person),
                               labelText: 'Prénom',
@@ -204,16 +242,39 @@ class _SignupPageState extends State<SignupPage>
                             },
                           ),
                         ),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _nomController,
+                            decoration: InputDecoration(
+                              prefixIcon: Icon(Icons.person),
+                              labelText: 'Nom',
+                              labelStyle: TextStyle(
+                                color: Color(0xFFED1C24),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderSide:
+                                    BorderSide(color: Color(0xFFED1C24)),
+                              ),
+                              border: OutlineInputBorder(),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Veuillez entrer votre nom';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
                       ],
                     ),
                     SizedBox(height: 10),
                     TextFormField(
+                      controller: _phoneController,
                       decoration: InputDecoration(
                         prefixIcon: Icon(Icons.phone),
-                        labelText: 'Numéro',
-                        labelStyle: TextStyle(
-                          color: Color(0xFFED1C24),
-                        ),
+                        labelText: 'Numéro Tél.',
+                        labelStyle: TextStyle(color: Color(0xFFED1C24)),
                         focusedBorder: OutlineInputBorder(
                           borderSide: BorderSide(color: Color(0xFFED1C24)),
                         ),
@@ -233,23 +294,17 @@ class _SignupPageState extends State<SignupPage>
                     ),
                     SizedBox(height: 10),
                     TextFormField(
+                      controller: _emailController,
                       decoration: InputDecoration(
                         prefixIcon: Icon(Icons.email),
                         labelText: 'Email',
-                        labelStyle: TextStyle(
-                          color: Color(0xFFED1C24),
-                        ),
+                        labelStyle: TextStyle(color: Color(0xFFED1C24)),
                         focusedBorder: OutlineInputBorder(
                           borderSide: BorderSide(color: Color(0xFFED1C24)),
                         ),
                         border: OutlineInputBorder(),
                       ),
                       keyboardType: TextInputType.emailAddress,
-                      onChanged: (value) {
-                        if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                          setState(() {});
-                        }
-                      },
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Veuillez entrer votre adresse email';
@@ -273,6 +328,10 @@ class _SignupPageState extends State<SignupPage>
                       },
                       displayStringForOption: (Map<String, String> option) =>
                           option['quartier']!,
+                      onSelected: (Map<String, String> selection) {
+                        _adresseController.text = selection['quartier']!;
+                        _communeController.text = selection['commune']!;
+                      },
                       fieldViewBuilder: (BuildContext context,
                           TextEditingController fieldTextEditingController,
                           FocusNode fieldFocusNode,
@@ -283,27 +342,12 @@ class _SignupPageState extends State<SignupPage>
                           decoration: InputDecoration(
                             prefixIcon: Icon(Icons.location_on),
                             labelText: 'Adresse',
-                            labelStyle: TextStyle(
-                              color: Color(0xFFED1C24),
-                            ),
+                            labelStyle: TextStyle(color: Color(0xFFED1C24)),
                             focusedBorder: OutlineInputBorder(
                               borderSide: BorderSide(color: Color(0xFFED1C24)),
                             ),
                             border: OutlineInputBorder(),
                           ),
-                          onChanged: (value) {
-                            final quartier = quartiers.firstWhere(
-                              (quartier) =>
-                                  quartier['quartier']!.toLowerCase() ==
-                                  value.toLowerCase(),
-                              orElse: () => {},
-                            );
-                            if (quartier.isNotEmpty) {
-                              _communeController.text = quartier['commune']!;
-                            } else {
-                              _communeController.clear();
-                            }
-                          },
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return 'Veuillez entrer votre adresse';
@@ -312,9 +356,6 @@ class _SignupPageState extends State<SignupPage>
                           },
                         );
                       },
-                      onSelected: (Map<String, String> selection) {
-                        _communeController.text = selection['commune']!;
-                      },
                     ),
                     SizedBox(height: 10),
                     TextFormField(
@@ -322,9 +363,7 @@ class _SignupPageState extends State<SignupPage>
                       decoration: InputDecoration(
                         prefixIcon: Icon(Icons.location_city),
                         labelText: 'Commune',
-                        labelStyle: TextStyle(
-                          color: Color(0xFFED1C24),
-                        ),
+                        labelStyle: TextStyle(color: Color(0xFFED1C24)),
                         focusedBorder: OutlineInputBorder(
                           borderSide: BorderSide(color: Color(0xFFED1C24)),
                         ),
@@ -334,12 +373,11 @@ class _SignupPageState extends State<SignupPage>
                     ),
                     SizedBox(height: 10),
                     TextFormField(
+                      controller: _passwordController,
                       decoration: InputDecoration(
                         prefixIcon: Icon(Icons.lock),
                         labelText: 'Mot de Passe',
-                        labelStyle: TextStyle(
-                          color: Color(0xFFED1C24),
-                        ),
+                        labelStyle: TextStyle(color: Color(0xFFED1C24)),
                         focusedBorder: OutlineInputBorder(
                           borderSide: BorderSide(color: Color(0xFFED1C24)),
                         ),
@@ -362,6 +400,9 @@ class _SignupPageState extends State<SignupPage>
                         if (value == null || value.isEmpty) {
                           return 'Veuillez entrer votre mot de passe';
                         }
+                        if (value.length < 6) {
+                          return 'Le mot de passe doit contenir au moins 6 caractères';
+                        }
                         return null;
                       },
                     ),
@@ -370,9 +411,7 @@ class _SignupPageState extends State<SignupPage>
                       decoration: InputDecoration(
                         prefixIcon: Icon(Icons.lock),
                         labelText: 'Confirmer le mot de passe',
-                        labelStyle: TextStyle(
-                          color: Color(0xFFED1C24),
-                        ),
+                        labelStyle: TextStyle(color: Color(0xFFED1C24)),
                         focusedBorder: OutlineInputBorder(
                           borderSide: BorderSide(color: Color(0xFFED1C24)),
                         ),
@@ -395,6 +434,9 @@ class _SignupPageState extends State<SignupPage>
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Veuillez confirmer votre mot de passe';
+                        }
+                        if (value != _passwordController.text) {
+                          return 'Les mots de passe ne correspondent pas';
                         }
                         return null;
                       },
@@ -447,12 +489,12 @@ class _SignupPageState extends State<SignupPage>
                     ),
                     SizedBox(height: 20),
                     ElevatedButton(
-                      onPressed: acceptTerms
-                          ? () {
-                              // Handle signup
-                            }
-                          : null,
-                      child: Text('S\'inscrire'),
+                      onPressed: acceptTerms ? _registerUser : null,
+                      child: _isLoading
+                          ? CircularProgressIndicator(
+                              color: Colors.white,
+                            )
+                          : Text('S\'inscrire'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Color(0xFFED1C24),
                         foregroundColor: Colors.white,

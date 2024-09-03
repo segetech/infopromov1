@@ -31,6 +31,10 @@ target 'Runner' do
   use_modular_headers!
 
   flutter_install_all_macos_pods File.dirname(File.realpath(__FILE__))
+
+  # Ajoutez Google Maps pour macOS
+  pod 'GoogleMaps', '~> 7.0'
+
   target 'RunnerTests' do
     inherit! :search_paths
   end
