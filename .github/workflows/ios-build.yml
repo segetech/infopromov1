@@ -1,0 +1,61 @@
+name: iOS build (Flutter, unsigned)
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_mode:
+        description: Build mode (release/profile)
+        required: false
+        default: release
+        type: choice
+        options: [release, profile]
+
+jobs:
+  build-ios:
+    runs-on: macos-14
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Flutter version
+        run: flutter --version
+
+      - name: Precache iOS artifacts
+        run: flutter precache --ios
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Update CocoaPods repo (may take a while)
+        run: |
+          cd ios
+          pod repo update
+        shell: bash
+
+      - name: Build unsigned IPA
+        run: |
+          MODE=${{ github.event.inputs.build_mode || 'release' }}
+          if [ "$MODE" = "profile" ]; then
+            flutter build ipa --profile --no-codesign
+          else
+            flutter build ipa --release --no-codesign
+          fi
+        shell: bash
+
+      - name: Upload iOS build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build-unsigned
+          path: |
+            build/ios/ipa/*.ipa
+            build/ios/iphoneos/*.app
+            build/ios/archive/*.xcarchive
+          if-no-files-found: warn

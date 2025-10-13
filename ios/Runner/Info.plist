@@ -70,11 +70,9 @@
     <string>AIzaSyANNC3DiWElD6gP8Dc7YxNldzwYAkuvJXU</string>
 
     <key>NSLocationWhenInUseUsageDescription</key>
-        <string>
-            Nous avons besoin de votre emplacement pour afficher des cartes personnalisées.
-        </string>
-        <key>NSLocationWhenInUseUsageDescription</key>
-<string>Votre position est utilisée pour afficher votre localisation actuelle sur la carte.</string>
+    <string>Votre position est utilisée pour afficher votre localisation actuelle sur la carte.</string>
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>Votre position peut être utilisée pour améliorer votre expérience, même en arrière-plan.</string>
 
 
 </dict>

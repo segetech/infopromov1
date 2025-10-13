@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'vendor_congratulations_page.dart';
 import 'VendorDetailsPage.dart';
@@ -43,42 +42,86 @@ class _GeolocationPageState extends State<GeolocationPage> {
     );
   }
 
+  Future<bool> _ensureLocationReady() async {
+    // Vérifie si les services de localisation sont activés
+    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Activez la localisation dans les paramètres.')),
+      );
+      await Geolocator.openLocationSettings();
+      return false;
+    }
+
+    // Vérifie/sollicite la permission
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+    if (permission == LocationPermission.denied) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Permission de localisation refusée')),
+      );
+      return false;
+    }
+    if (permission == LocationPermission.deniedForever) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Permission refusée définitivement. Ouvrez les réglages.')),
+      );
+      await Geolocator.openAppSettings();
+      return false;
+    }
+    return true;
+  }
+
   Future<void> _getCurrentLocation() async {
-    if (await Permission.location.request().isGranted) {
+    setState(() => _isLoading = true);
+    try {
+      final ok = await _ensureLocationReady();
+      if (!ok) return;
+
+      Position position;
+      try {
+        position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+          timeLimit: const Duration(seconds: 6),
+        );
+      } catch (_) {
+        // Sur émulateur, la position courante peut être indisponible; essaye la dernière connue
+        final last = await Geolocator.getLastKnownPosition();
+        if (last != null) {
+          position = last;
+        } else {
+          // Fallback: rester sur Bamako si aucune position n'est disponible
+          setState(() {
+            _currentPosition = null;
+            _selectedPosition = _bamakoPosition;
+          });
+          return;
+        }
+      }
+
       setState(() {
-        _isLoading = true;
+        _currentPosition = LatLng(position.latitude, position.longitude);
+        _selectedPosition = _currentPosition;
       });
 
-      try {
-        Position position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high,
-        );
-
-        setState(() {
-          _currentPosition = LatLng(position.latitude, position.longitude);
-          _selectedPosition = _currentPosition;
-        });
-
-        _mapController?.animateCamera(
-          CameraUpdate.newCameraPosition(
-            CameraPosition(target: _currentPosition!, zoom: 14),
-          ),
-        );
-      } catch (e) {
-        print("Erreur lors de la récupération de la position : $e");
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('Erreur: Impossible de récupérer la position')),
-        );
-      } finally {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Permission de localisation refusée')),
+      _mapController?.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(target: _currentPosition!, zoom: 14),
+        ),
       );
+    } catch (e) {
+      // Log et message utilisateur
+      // ignore: avoid_print
+      print('Erreur lors de la récupération de la position: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Erreur: Impossible de récupérer la position")),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -188,6 +231,7 @@ class _GeolocationPageState extends State<GeolocationPage> {
                       zoom: 12,
                     ),
                     myLocationEnabled: true,
+                    myLocationButtonEnabled: true,
                     onTap: _onMapTapped,
                     markers: _selectedPosition != null
                         ? {

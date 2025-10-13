@@ -9,6 +9,24 @@ class IntroductionScreen extends StatefulWidget {
 
 class _IntroductionScreenState extends State<IntroductionScreen> {
   final PageController _controller = PageController();
+  bool _didPrecache = false;
+  int _lastPage = 0;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_didPrecache) {
+      _didPrecache = true;
+      // Precache only the first image after the first frame
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        try {
+          await precacheImage(const AssetImage('assets/images/Image1.png'), context);
+        } catch (_) {
+          // Ignore precache errors; assets will still load on demand
+        }
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -21,13 +39,35 @@ class _IntroductionScreenState extends State<IntroductionScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          PageView(
+          PageView.builder(
             controller: _controller,
-            children: [
-              IntroPage1(controller: _controller),
-              IntroPage2(controller: _controller),
-              IntroPage3(controller: _controller),
-            ],
+            itemCount: 3,
+            onPageChanged: (index) {
+              // Precache next page's principal image just-in-time
+              if (index > _lastPage) {
+                _lastPage = index;
+                WidgetsBinding.instance.addPostFrameCallback((_) async {
+                  try {
+                    if (index == 0) {
+                      await precacheImage(const AssetImage('assets/images/Image2.png'), context);
+                    } else if (index == 1) {
+                      await precacheImage(const AssetImage('assets/icons/super.gif'), context);
+                    }
+                  } catch (_) {}
+                });
+              }
+            },
+            itemBuilder: (context, index) {
+              switch (index) {
+                case 0:
+                  return IntroPage1(controller: _controller);
+                case 1:
+                  return IntroPage2(controller: _controller);
+                case 2:
+                default:
+                  return IntroPage3(controller: _controller);
+              }
+            },
           ),
           Positioned(
             top: 40,
@@ -108,12 +148,20 @@ class IntroPage1 extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final devicePixelRatio = MediaQuery.of(context).devicePixelRatio;
+    final logicalWidth = MediaQuery.of(context).size.width * 0.8;
+    final cacheWidth = (logicalWidth * devicePixelRatio).round();
     return Container(
       color: Colors.white,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Image.asset('assets/images/Image1.png'),
+          Image.asset(
+            'assets/images/Image1.png',
+            width: logicalWidth,
+            cacheWidth: cacheWidth,
+            filterQuality: FilterQuality.low,
+          ),
           SizedBox(height: 20),
           Text(
             'Info Promo',
@@ -160,12 +208,20 @@ class IntroPage2 extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final devicePixelRatio = MediaQuery.of(context).devicePixelRatio;
+    final logicalWidth = MediaQuery.of(context).size.width * 0.8;
+    final cacheWidth = (logicalWidth * devicePixelRatio).round();
     return Container(
       color: Color(0xFFED1C24),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Image.asset('assets/images/Image2.png'),
+          Image.asset(
+            'assets/images/Image2.png',
+            width: logicalWidth,
+            cacheWidth: cacheWidth,
+            filterQuality: FilterQuality.low,
+          ),
           SizedBox(height: 20),
           Text(
             'Économisez jusqu\'à 70 %',
@@ -212,12 +268,21 @@ class IntroPage3 extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final devicePixelRatio = MediaQuery.of(context).devicePixelRatio;
+    final logicalWidth = MediaQuery.of(context).size.width * 0.8;
+    final cacheWidth = (logicalWidth * devicePixelRatio).round();
     return Container(
       color: Colors.white,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Image.asset('assets/icons/super.gif'),
+          Image.asset(
+            'assets/icons/super.gif',
+            width: logicalWidth,
+            cacheWidth: cacheWidth,
+            filterQuality: FilterQuality.low,
+            gaplessPlayback: true,
+          ),
           SizedBox(height: 20),
           Text(
             'Super Deals',

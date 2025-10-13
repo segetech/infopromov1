@@ -175,6 +175,13 @@ class _VendorRegistrationPageState extends State<VendorRegistrationPage> {
   }
 
   Future<void> _registerVendor() async {
+    if (widget.userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Utilisateur non identifié. Veuillez vous connecter.')),
+      );
+      return;
+    }
+
     if (_formKey.currentState?.validate() ?? false) {
       setState(() {
         _isLoading = true;
@@ -480,7 +487,7 @@ class _VendorRegistrationPageState extends State<VendorRegistrationPage> {
                     ),
                     SizedBox(height: 20),
                     ElevatedButton(
-                      onPressed: acceptTerms ? _registerVendor : null,
+                      onPressed: acceptTerms && widget.userId != null ? _registerVendor : null,
                       child: _isLoading
                           ? CircularProgressIndicator(color: Colors.white)
                           : Text('Continuer'),

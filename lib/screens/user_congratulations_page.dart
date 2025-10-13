@@ -37,8 +37,8 @@ class UserCongratulationsPage extends StatelessWidget {
               SizedBox(height: 30),
               ElevatedButton(
                 onPressed: () {
-                  // Rediriger l'utilisateur vers la page d'accueil ou une autre page
-                  Navigator.pushReplacementNamed(context, 'HomeScreen');
+                  // Rediriger l'utilisateur vers la page d'accueil
+                  Navigator.pushReplacementNamed(context, '/home');
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
